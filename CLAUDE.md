@@ -98,3 +98,4 @@ cargo run -- config init
 ## 交互指南
 
 - 和我交互使用中文
+- git 注释使用中文
