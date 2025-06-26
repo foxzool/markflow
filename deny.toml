@@ -36,6 +36,7 @@ allow = [
     "Unicode-DFS-2016",
     "Unicode-3.0",
     "CC0-1.0",
+    "MPL-2.0",
 ]
 # List of explicitly disallowed licenses
 deny = [
@@ -54,7 +55,8 @@ confidence-threshold = 0.8
 # aren't accepted for every possible crate as with the normal allow list
 exceptions = [
     # Each entry is the crate and version constraint, and its the license
-    { allow = ["OpenSSL"], name = "ring", version = "*" },
+    { allow = ["OpenSSL"], name = "ring", version = "0.16.20" },
+    { allow = ["OpenSSL"], name = "ring", version = "0.17.*" },
 ]
 
 [bans]
