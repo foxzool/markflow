@@ -1,0 +1,74 @@
+[package]
+name = "markflow"
+version = "0.1.0"
+edition = "2021"
+authors = ["Your Name <your.email@example.com>"]
+description = "Markdown to HTML processor with WeChat and Zhihu publishing support"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+# Markdown processing
+comrak = "0.18"
+
+# Async runtime
+tokio = { version = "1", features = ["full"] }
+
+# Web framework
+axum = "0.7"
+tower = "0.4"
+tower-http = { version = "0.5", features = ["fs", "cors", "trace"] }
+
+# HTTP client
+reqwest = { version = "0.11", features = ["json", "cookies"] }
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# HTML parsing and manipulation
+scraper = "0.17"
+
+# Browser automation (for Zhihu)
+thirtyfour = "0.31"
+
+# File watching
+notify = "6"
+
+# Template engine
+tera = "1"
+
+# CLI
+clap = { version = "4", features = ["derive"] }
+
+# Error handling
+anyhow = "1"
+thiserror = "1"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Utilities
+regex = "1"
+uuid = { version = "1", features = ["v4", "serde"] }
+url = "2"
+mime = "0.3"
+async-trait = "0.1"
+chrono = { version = "0.4", features = ["serde"] }
+html5ever = "0.26"
+html-escape = "0.2"
+toml = "0.8"
+dirs = "5"
+
+# Image handling
+image = "0.24"
+
+# Configuration
+config = "0.13"
+
+# Cache
+cached = "0.44"
+
+[dev-dependencies]
+tempfile = "3"
+tokio-test = "0.4"

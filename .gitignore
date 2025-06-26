@@ -1,0 +1,38 @@
+# Rust build artifacts
+/target/
+Cargo.lock
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Log files
+*.log
+
+# Output directories
+/output/
+/dist/
+
+# Backup files
+/backup/
+*.bak
+
+# Config files (if containing sensitive data)
+.env
+.env.local
+
+# Test artifacts
+coverage/
+*.profraw
