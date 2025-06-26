@@ -1,5 +1,7 @@
-use crate::Result;
-use crate::core::content::{Content, Platform};
+use crate::{
+    core::content::{Content, Platform},
+    Result,
+};
 use async_trait::async_trait;
 
 #[async_trait]

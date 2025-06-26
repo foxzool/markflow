@@ -1,7 +1,7 @@
+pub mod traits;
 pub mod wechat;
 pub mod zhihu;
-pub mod traits;
 
+pub use traits::*;
 pub use wechat::*;
 pub use zhihu::*;
-pub use traits::*;

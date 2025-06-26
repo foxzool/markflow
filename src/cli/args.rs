@@ -1,8 +1,7 @@
 use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
-use std::collections::HashMap;
+use std::{collections::HashMap, path::PathBuf};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct AppConfig {
     pub general: GeneralConfig,
     pub wechat: WeChatConfig,
@@ -50,21 +49,9 @@ pub struct TemplateConfig {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OutputConfig {
     pub output_dir: PathBuf,
-    pub create_subdirs: bool, // 是否为每个平台创建子目录
+    pub create_subdirs: bool,     // 是否为每个平台创建子目录
     pub filename_pattern: String, // 文件名模式，如 "{title}_{platform}.html"
     pub backup_dir: Option<PathBuf>,
-}
-
-impl Default for AppConfig {
-    fn default() -> Self {
-        Self {
-            general: GeneralConfig::default(),
-            wechat: WeChatConfig::default(),
-            zhihu: ZhihuConfig::default(),
-            templates: TemplateConfig::default(),
-            output: OutputConfig::default(),
-        }
-    }
 }
 
 impl Default for GeneralConfig {
@@ -132,31 +119,31 @@ impl AppConfig {
         if !path.exists() {
             return Ok(Self::default());
         }
-        
+
         let content = std::fs::read_to_string(path)?;
         let config: AppConfig = toml::from_str(&content)
             .map_err(|e| crate::error::Error::Config(format!("配置文件解析失败: {}", e)))?;
-        
+
         Ok(config)
     }
-    
+
     pub fn save_to_file(&self, path: &PathBuf) -> crate::Result<()> {
         if let Some(parent) = path.parent() {
             std::fs::create_dir_all(parent)?;
         }
-        
+
         let content = toml::to_string_pretty(self)
             .map_err(|e| crate::error::Error::Config(format!("配置序列化失败: {}", e)))?;
-        
+
         std::fs::write(path, content)?;
         Ok(())
     }
-    
+
     pub fn get_config_path() -> PathBuf {
         let home_dir = dirs::home_dir().unwrap_or_else(|| PathBuf::from("."));
         home_dir.join(".markflow").join("config.toml")
     }
-    
+
     pub fn set_value(&mut self, key: &str, value: &str) -> crate::Result<()> {
         match key {
             "general.author" => self.general.author = Some(value.to_string()),
@@ -164,26 +151,31 @@ impl AppConfig {
             "general.auto_save" => self.general.auto_save = value.parse().unwrap_or(true),
             "general.backup_enabled" => self.general.backup_enabled = value.parse().unwrap_or(true),
             "general.watch_interval" => self.general.watch_interval = value.parse().unwrap_or(2),
-            
+
             "wechat.app_id" => self.wechat.app_id = Some(value.to_string()),
             "wechat.app_secret" => self.wechat.app_secret = Some(value.to_string()),
             "wechat.auto_publish" => self.wechat.auto_publish = value.parse().unwrap_or(false),
             "wechat.draft_mode" => self.wechat.draft_mode = value.parse().unwrap_or(true),
-            
+
             "zhihu.username" => self.zhihu.username = Some(value.to_string()),
             "zhihu.auto_publish" => self.zhihu.auto_publish = value.parse().unwrap_or(false),
             "zhihu.enable_math" => self.zhihu.enable_math = value.parse().unwrap_or(true),
             "zhihu.code_theme" => self.zhihu.code_theme = value.to_string(),
-            
+
             "output.output_dir" => self.output.output_dir = PathBuf::from(value),
             "output.create_subdirs" => self.output.create_subdirs = value.parse().unwrap_or(true),
             "output.filename_pattern" => self.output.filename_pattern = value.to_string(),
-            
-            _ => return Err(crate::error::Error::Config(format!("未知的配置键: {}", key))),
+
+            _ => {
+                return Err(crate::error::Error::Config(format!(
+                    "未知的配置键: {}",
+                    key
+                )))
+            }
         }
         Ok(())
     }
-    
+
     pub fn get_value(&self, key: &str) -> Option<String> {
         match key {
             "general.author" => self.general.author.clone(),
@@ -191,21 +183,21 @@ impl AppConfig {
             "general.auto_save" => Some(self.general.auto_save.to_string()),
             "general.backup_enabled" => Some(self.general.backup_enabled.to_string()),
             "general.watch_interval" => Some(self.general.watch_interval.to_string()),
-            
+
             "wechat.app_id" => self.wechat.app_id.clone(),
             "wechat.app_secret" => self.wechat.app_secret.clone(),
             "wechat.auto_publish" => Some(self.wechat.auto_publish.to_string()),
             "wechat.draft_mode" => Some(self.wechat.draft_mode.to_string()),
-            
+
             "zhihu.username" => self.zhihu.username.clone(),
             "zhihu.auto_publish" => Some(self.zhihu.auto_publish.to_string()),
             "zhihu.enable_math" => Some(self.zhihu.enable_math.to_string()),
             "zhihu.code_theme" => Some(self.zhihu.code_theme.clone()),
-            
+
             "output.output_dir" => Some(self.output.output_dir.display().to_string()),
             "output.create_subdirs" => Some(self.output.create_subdirs.to_string()),
             "output.filename_pattern" => Some(self.output.filename_pattern.clone()),
-            
+
             _ => None,
         }
     }

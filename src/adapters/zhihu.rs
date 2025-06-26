@@ -1,6 +1,9 @@
-use crate::{Result, error::Error};
-use crate::core::content::{Content, Platform};
-use crate::adapters::traits::{PlatformAdapter, StyleProvider, ValidationError, ValidationSeverity};
+use crate::{
+    adapters::traits::{PlatformAdapter, StyleProvider, ValidationError, ValidationSeverity},
+    core::content::{Content, Platform},
+    error::Error,
+    Result,
+};
 use async_trait::async_trait;
 use regex::Regex;
 
@@ -18,8 +21,8 @@ impl ZhihuStyleAdapter {
             code_highlight_theme: "github".to_string(),
             max_content_length: 30000, // 知乎字数限制相对宽松
             forbidden_tags: vec![
-                "script", "style", "iframe", "object", "embed", 
-                "form", "input", "button", "meta", "link"
+                "script", "style", "iframe", "object", "embed", "form", "input", "button", "meta",
+                "link",
             ],
         }
     }
@@ -40,24 +43,28 @@ impl ZhihuStyleAdapter {
         }
 
         tracing::debug!("渲染数学公式");
-        
+
         // 处理行内数学公式 $...$
         let inline_math_regex = Regex::new(r"\$([^\$\n]+)\$")
             .map_err(|e| Error::Html(format!("数学公式正则表达式失败: {}", e)))?;
-        
-        let mut result = inline_math_regex.replace_all(html, |caps: &regex::Captures| {
-            let formula = &caps[1];
-            self.render_katex_inline(formula)
-        }).to_string();
+
+        let mut result = inline_math_regex
+            .replace_all(html, |caps: &regex::Captures| {
+                let formula = &caps[1];
+                self.render_katex_inline(formula)
+            })
+            .to_string();
 
         // 处理块级数学公式 $$...$$
         let block_math_regex = Regex::new(r"\$\$([\s\S]*?)\$\$")
             .map_err(|e| Error::Html(format!("块级数学公式正则表达式失败: {}", e)))?;
-        
-        result = block_math_regex.replace_all(&result, |caps: &regex::Captures| {
-            let formula = &caps[1].trim();
-            self.render_katex_block(formula)
-        }).to_string();
+
+        result = block_math_regex
+            .replace_all(&result, |caps: &regex::Captures| {
+                let formula = &caps[1].trim();
+                self.render_katex_block(formula)
+            })
+            .to_string();
 
         Ok(result)
     }
@@ -83,15 +90,16 @@ impl ZhihuStyleAdapter {
 
     fn enhance_code_blocks(&self, html: &str) -> Result<String> {
         tracing::debug!("增强代码块样式");
-        
+
         // 为代码块添加知乎样式
-        let pre_regex = Regex::new(r#"<pre><code(?:\s+class="language-([^"]*)")?>([^<]*?)</code></pre>"#)
-            .map_err(|e| Error::Html(format!("代码块正则表达式失败: {}", e)))?;
-        
+        let pre_regex =
+            Regex::new(r#"<pre><code(?:\s+class="language-([^"]*)")?>([^<]*?)</code></pre>"#)
+                .map_err(|e| Error::Html(format!("代码块正则表达式失败: {}", e)))?;
+
         let result = pre_regex.replace_all(html, |caps: &regex::Captures| {
             let language = caps.get(1).map_or("text", |m| m.as_str());
             let code = &caps[2];
-            
+
             format!(
                 r#"<div class="highlight"><pre><code class="language-{}" data-lang="{}">{}</code></pre></div>"#,
                 language, language, code
@@ -100,29 +108,31 @@ impl ZhihuStyleAdapter {
 
         // 增强行内代码样式
         let inline_code_regex = Regex::new(r#"<code>([^<]+)</code>"#).unwrap();
-        let result = inline_code_regex.replace_all(&result, |caps: &regex::Captures| {
-            let code = &caps[1];
-            format!(r#"<code class="inline-code">{}</code>"#, code)
-        }).to_string();
+        let result = inline_code_regex
+            .replace_all(&result, |caps: &regex::Captures| {
+                let code = &caps[1];
+                format!(r#"<code class="inline-code">{}</code>"#, code)
+            })
+            .to_string();
 
         Ok(result)
     }
 
     fn sanitize_html(&self, html: &str) -> Result<String> {
         let mut result = html.to_string();
-        
+
         // 移除禁用的标签
         for tag in &self.forbidden_tags {
             let tag_regex = Regex::new(&format!(r"<{}[^>]*>[\s\S]*?</{}>", tag, tag))
                 .map_err(|e| Error::Html(format!("清理标签正则表达式失败: {}", e)))?;
             result = tag_regex.replace_all(&result, "").to_string();
-            
+
             // 也移除自闭合标签
             let self_closing_regex = Regex::new(&format!(r"<{}\s*[^>]*/>", tag))
                 .map_err(|e| Error::Html(format!("清理自闭合标签正则表达式失败: {}", e)))?;
             result = self_closing_regex.replace_all(&result, "").to_string();
         }
-        
+
         // 清理危险属性
         let dangerous_attrs = ["onclick", "onload", "onerror", "onmouseover", "onfocus"];
         for attr in dangerous_attrs {
@@ -130,66 +140,76 @@ impl ZhihuStyleAdapter {
                 .map_err(|e| Error::Html(format!("清理属性正则表达式失败: {}", e)))?;
             result = attr_regex.replace_all(&result, "").to_string();
         }
-        
+
         Ok(result)
     }
 
     fn optimize_images(&self, html: &str) -> Result<String> {
         tracing::debug!("优化图片显示");
-        
+
         // 为图片添加知乎样式类
         let img_regex = Regex::new(r#"<img([^>]*?)>"#)
             .map_err(|e| Error::Html(format!("图片正则表达式失败: {}", e)))?;
-        
-        let result = img_regex.replace_all(html, |caps: &regex::Captures| {
-            let attrs = &caps[1];
-            
-            // 检查是否已有class属性
-            if attrs.contains("class=") {
-                let class_regex = Regex::new(r#"class="([^"]*)""#).unwrap();
-                class_regex.replace(attrs, |class_caps: &regex::Captures| {
-                    let existing_classes = class_caps.get(1).map_or("", |m| m.as_str());
-                    format!(r#"class="{} ztext-image""#, existing_classes)
-                }).to_string()
-            } else {
-                format!(r#"<img{} class="ztext-image">"#, attrs)
-            }
-        }).to_string();
-        
+
+        let result = img_regex
+            .replace_all(html, |caps: &regex::Captures| {
+                let attrs = &caps[1];
+
+                // 检查是否已有class属性
+                if attrs.contains("class=") {
+                    let class_regex = Regex::new(r#"class="([^"]*)""#).unwrap();
+                    class_regex
+                        .replace(attrs, |class_caps: &regex::Captures| {
+                            let existing_classes = class_caps.get(1).map_or("", |m| m.as_str());
+                            format!(r#"class="{} ztext-image""#, existing_classes)
+                        })
+                        .to_string()
+                } else {
+                    format!(r#"<img{} class="ztext-image">"#, attrs)
+                }
+            })
+            .to_string();
+
         Ok(result)
     }
 
     fn enhance_tables(&self, html: &str) -> Result<String> {
         tracing::debug!("增强表格样式");
-        
+
         // 为表格添加知乎样式
         let table_regex = Regex::new(r#"<table([^>]*)>"#).unwrap();
-        let result = table_regex.replace_all(html, |caps: &regex::Captures| {
-            let attrs = &caps[1];
-            format!(r#"<table{} class="ztext-table">"#, attrs)
-        }).to_string();
-        
+        let result = table_regex
+            .replace_all(html, |caps: &regex::Captures| {
+                let attrs = &caps[1];
+                format!(r#"<table{} class="ztext-table">"#, attrs)
+            })
+            .to_string();
+
         Ok(result)
     }
 
     fn process_lists(&self, html: &str) -> Result<String> {
         // 处理列表，确保知乎格式兼容
         let mut result = html.to_string();
-        
+
         // 为有序列表添加样式
         let ol_regex = Regex::new(r#"<ol([^>]*)>"#).unwrap();
-        result = ol_regex.replace_all(&result, |caps: &regex::Captures| {
-            let attrs = &caps[1];
-            format!(r#"<ol{} class="ztext-list">"#, attrs)
-        }).to_string();
-        
+        result = ol_regex
+            .replace_all(&result, |caps: &regex::Captures| {
+                let attrs = &caps[1];
+                format!(r#"<ol{} class="ztext-list">"#, attrs)
+            })
+            .to_string();
+
         // 为无序列表添加样式
         let ul_regex = Regex::new(r#"<ul([^>]*)>"#).unwrap();
-        result = ul_regex.replace_all(&result, |caps: &regex::Captures| {
-            let attrs = &caps[1];
-            format!(r#"<ul{} class="ztext-list">"#, attrs)
-        }).to_string();
-        
+        result = ul_regex
+            .replace_all(&result, |caps: &regex::Captures| {
+                let attrs = &caps[1];
+                format!(r#"<ul{} class="ztext-list">"#, attrs)
+            })
+            .to_string();
+
         Ok(result)
     }
 
@@ -197,11 +217,14 @@ impl ZhihuStyleAdapter {
     fn add_zhihu_meta(&self, html: &str, content: &Content) -> Result<String> {
         // 添加知乎特定的元数据
         let meta_section = if !content.metadata.tags.is_empty() {
-            let tags_html = content.metadata.tags.iter()
+            let tags_html = content
+                .metadata
+                .tags
+                .iter()
                 .map(|tag| format!(r#"<span class="ztext-tag">#{}</span>"#, tag))
                 .collect::<Vec<_>>()
                 .join(" ");
-            
+
             format!(
                 r#"<div class="ztext-meta">
                     <div class="ztext-tags">{}</div>
@@ -211,7 +234,7 @@ impl ZhihuStyleAdapter {
         } else {
             String::new()
         };
-        
+
         Ok(format!("{}{}", html, meta_section))
     }
 }
@@ -230,42 +253,45 @@ impl PlatformAdapter for ZhihuStyleAdapter {
 
     fn adapt_html(&self, html: &str) -> Result<String> {
         tracing::info!("开始适配知乎样式");
-        
+
         // 1. 清理和消毒HTML
         let sanitized = self.sanitize_html(html)?;
-        
+
         // 2. 渲染数学公式
         let with_math = self.render_math_expressions(&sanitized)?;
-        
+
         // 3. 增强代码块
         let enhanced_code = self.enhance_code_blocks(&with_math)?;
-        
+
         // 4. 优化图片
         let optimized_images = self.optimize_images(&enhanced_code)?;
-        
+
         // 5. 增强表格
         let enhanced_tables = self.enhance_tables(&optimized_images)?;
-        
+
         // 6. 处理列表
         let processed_lists = self.process_lists(&enhanced_tables)?;
-        
+
         tracing::info!("知乎样式适配完成");
         Ok(processed_lists)
     }
 
     fn validate_content(&self, content: &Content) -> Result<()> {
         let mut errors = Vec::new();
-        
+
         // 检查内容长度
         if content.markdown.len() > self.max_content_length {
             errors.push(ValidationError {
                 field: "content".to_string(),
-                message: format!("内容长度超过限制（当前：{}，限制：{}）", 
-                               content.markdown.len(), self.max_content_length),
+                message: format!(
+                    "内容长度超过限制（当前：{}，限制：{}）",
+                    content.markdown.len(),
+                    self.max_content_length
+                ),
                 severity: ValidationSeverity::Error,
             });
         }
-        
+
         // 检查标题
         if content.title.is_empty() {
             errors.push(ValidationError {
@@ -274,7 +300,7 @@ impl PlatformAdapter for ZhihuStyleAdapter {
                 severity: ValidationSeverity::Error,
             });
         }
-        
+
         if content.title.len() > 100 {
             errors.push(ValidationError {
                 field: "title".to_string(),
@@ -282,7 +308,7 @@ impl PlatformAdapter for ZhihuStyleAdapter {
                 severity: ValidationSeverity::Warning,
             });
         }
-        
+
         // 检查标签数量
         if content.metadata.tags.len() > 5 {
             errors.push(ValidationError {
@@ -291,7 +317,7 @@ impl PlatformAdapter for ZhihuStyleAdapter {
                 severity: ValidationSeverity::Warning,
             });
         }
-        
+
         // 检查是否包含禁用内容
         let forbidden_keywords = ["广告", "推广", "联系方式"];
         for keyword in forbidden_keywords {
@@ -303,21 +329,22 @@ impl PlatformAdapter for ZhihuStyleAdapter {
                 });
             }
         }
-        
+
         if !errors.is_empty() {
-            let error_messages: Vec<String> = errors.iter()
+            let error_messages: Vec<String> = errors
+                .iter()
                 .filter(|e| matches!(e.severity, ValidationSeverity::Error))
                 .map(|e| format!("{}: {}", e.field, e.message))
                 .collect();
-            
+
             if !error_messages.is_empty() {
                 return Err(Error::Publishing(format!(
-                    "知乎内容验证失败: {}", 
+                    "知乎内容验证失败: {}",
                     error_messages.join("; ")
                 )));
             }
         }
-        
+
         Ok(())
     }
 

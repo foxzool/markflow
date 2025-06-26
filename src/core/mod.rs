@@ -1,7 +1,7 @@
-pub mod processor;
 pub mod content;
 pub mod pipeline;
+pub mod processor;
 
-pub use processor::*;
 pub use content::*;
 pub use pipeline::*;
+pub use processor::*;

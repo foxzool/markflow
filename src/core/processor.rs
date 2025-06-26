@@ -1,7 +1,13 @@
-use crate::{Result, error::Error};
-use crate::core::content::{Content, ContentMetadata};
-use comrak::{Arena, parse_document, format_html, ComrakOptions};
-use comrak::nodes::{AstNode, NodeValue};
+use crate::{
+    core::content::{Content, ContentMetadata},
+    error::Error,
+    Result,
+};
+use comrak::{
+    format_html,
+    nodes::{AstNode, NodeValue},
+    parse_document, Arena, ComrakOptions,
+};
 use regex::Regex;
 use std::collections::HashMap;
 
@@ -13,7 +19,7 @@ pub struct MarkdownProcessor {
 impl MarkdownProcessor {
     pub fn new() -> Self {
         let mut options = ComrakOptions::default();
-        
+
         // 启用GitHub Flavored Markdown扩展
         options.extension.strikethrough = true;
         options.extension.table = true;
@@ -23,19 +29,19 @@ impl MarkdownProcessor {
         options.extension.superscript = true;
         options.extension.tagfilter = false; // 允许HTML标签
         options.extension.description_lists = true;
-        
+
         // 渲染选项
         options.render.hardbreaks = false;
         options.render.github_pre_lang = true;
         options.render.unsafe_ = true; // 允许原始HTML
-        
+
         // 解析选项
         options.parse.smart = true;
         options.parse.default_info_string = Some("text".to_string());
 
         let front_matter_regex = Regex::new(r"^---\n([\s\S]*?)\n---\n").unwrap();
 
-        Self { 
+        Self {
             options,
             front_matter_regex,
         }
@@ -46,24 +52,24 @@ impl MarkdownProcessor {
 
         // 解析Front Matter
         let (front_matter, content_markdown) = self.parse_front_matter(markdown)?;
-        
+
         // 从front matter创建metadata
         let metadata = self.create_metadata_from_front_matter(&front_matter)?;
-        
+
         // 提取标题
         let title = self.extract_title(&content_markdown, &front_matter)?;
-        
+
         // 创建内容对象
         let mut content = Content::new(title, content_markdown.clone());
         content.metadata = metadata;
-        
+
         // 处理Markdown
         let html = self.markdown_to_html(&content_markdown)?;
         content.html = html;
-        
+
         // 计算阅读时间
         content.calculate_reading_time();
-        
+
         tracing::info!("Markdown处理完成，标题: {}", content.title);
         Ok(content)
     }
@@ -75,7 +81,7 @@ impl MarkdownProcessor {
         if let Some(captures) = self.front_matter_regex.captures(markdown) {
             let yaml_content = captures.get(1).unwrap().as_str();
             content_markdown = self.front_matter_regex.replace(markdown, "").into_owned();
-            
+
             // 简单的YAML解析（仅支持key: value格式）
             for line in yaml_content.lines() {
                 if let Some((key, value)) = line.split_once(':') {
@@ -91,17 +97,20 @@ impl MarkdownProcessor {
         Ok((front_matter, content_markdown))
     }
 
-    fn create_metadata_from_front_matter(&self, front_matter: &HashMap<String, String>) -> Result<ContentMetadata> {
+    fn create_metadata_from_front_matter(
+        &self,
+        front_matter: &HashMap<String, String>,
+    ) -> Result<ContentMetadata> {
         let mut metadata = ContentMetadata::default();
-        
+
         if let Some(author) = front_matter.get("author") {
             metadata.author = Some(author.clone());
         }
-        
+
         if let Some(description) = front_matter.get("description") {
             metadata.description = Some(description.clone());
         }
-        
+
         if let Some(tags_str) = front_matter.get("tags") {
             metadata.tags = tags_str
                 .split(',')
@@ -109,27 +118,34 @@ impl MarkdownProcessor {
                 .filter(|s| !s.is_empty())
                 .collect();
         }
-        
+
         if let Some(cover) = front_matter.get("cover") {
             metadata.cover_image = Some(cover.clone());
         }
 
         // 添加自定义字段
         for (key, value) in front_matter {
-            if !matches!(key.as_str(), "title" | "author" | "description" | "tags" | "cover") {
+            if !matches!(
+                key.as_str(),
+                "title" | "author" | "description" | "tags" | "cover"
+            ) {
                 metadata.custom_fields.insert(key.clone(), value.clone());
             }
         }
-        
+
         Ok(metadata)
     }
 
-    fn extract_title(&self, markdown: &str, front_matter: &HashMap<String, String>) -> Result<String> {
+    fn extract_title(
+        &self,
+        markdown: &str,
+        front_matter: &HashMap<String, String>,
+    ) -> Result<String> {
         // 首先检查front matter中的title
         if let Some(title) = front_matter.get("title") {
             return Ok(title.clone());
         }
-        
+
         // 从markdown内容中提取第一个一级标题
         let title_regex = Regex::new(r"^#\s+(.+)$").unwrap();
         for line in markdown.lines() {
@@ -137,7 +153,7 @@ impl MarkdownProcessor {
                 return Ok(captures.get(1).unwrap().as_str().to_string());
             }
         }
-        
+
         // 如果都没有找到，使用默认标题
         Ok("无标题".to_string())
     }
@@ -145,16 +161,15 @@ impl MarkdownProcessor {
     fn markdown_to_html(&self, markdown: &str) -> Result<String> {
         let arena = Arena::new();
         let root = parse_document(&arena, markdown, &self.options);
-        
+
         // 可以在这里对AST进行后处理
         self.process_ast(&arena, root)?;
-        
+
         let mut html = vec![];
         format_html(root, &self.options, &mut html)
             .map_err(|e| Error::Markdown(format!("HTML生成失败: {}", e)))?;
-        
-        String::from_utf8(html)
-            .map_err(|e| Error::Markdown(format!("HTML编码转换失败: {}", e)))
+
+        String::from_utf8(html).map_err(|e| Error::Markdown(format!("HTML编码转换失败: {}", e)))
     }
 
     fn process_ast<'a>(&self, _arena: &Arena<AstNode>, root: &'a AstNode<'a>) -> Result<()> {
@@ -184,20 +199,21 @@ impl MarkdownProcessor {
             }
             Ok(())
         })?;
-        
+
         Ok(())
     }
 
+    #[allow(clippy::only_used_in_recursion)]
     fn iter_nodes<'a, F>(&self, node: &'a AstNode<'a>, callback: &F) -> Result<()>
     where
         F: Fn(&AstNode) -> Result<()>,
     {
         callback(node)?;
-        
+
         for child in node.children() {
             self.iter_nodes(child, callback)?;
         }
-        
+
         Ok(())
     }
 
@@ -207,7 +223,7 @@ impl MarkdownProcessor {
             .captures_iter(markdown)
             .map(|cap| cap[1].to_string())
             .collect();
-        
+
         Ok(images)
     }
 
@@ -217,7 +233,7 @@ impl MarkdownProcessor {
             .captures_iter(markdown)
             .map(|cap| cap[1].to_string())
             .collect();
-        
+
         Ok(links)
     }
 }
@@ -244,9 +260,9 @@ mod tests {
     fn test_simple_markdown_processing() {
         let processor = MarkdownProcessor::new();
         let markdown = "# Test Title\n\nThis is a **bold** text.";
-        
+
         let content = processor.process(markdown).unwrap();
-        
+
         assert_eq!(content.title, "Test Title");
         assert!(content.html.contains("<h1>"));
         assert!(content.html.contains("<strong>"));
@@ -268,11 +284,14 @@ description: "Test description"
 Content here."#;
 
         let content = processor.process(markdown_with_front_matter).unwrap();
-        
+
         assert_eq!(content.title, "Custom Title");
         assert_eq!(content.metadata.author, Some("Test Author".to_string()));
         assert_eq!(content.metadata.tags, vec!["rust", "markdown"]);
-        assert_eq!(content.metadata.description, Some("Test description".to_string()));
+        assert_eq!(
+            content.metadata.description,
+            Some("Test description".to_string())
+        );
     }
 
     #[test]
@@ -286,7 +305,7 @@ Content here."#;
 "#;
 
         let content = processor.process(markdown).unwrap();
-        
+
         assert!(content.html.contains("<table>"));
         assert!(content.html.contains("<th>"));
         assert!(content.html.contains("<td>"));
@@ -306,7 +325,7 @@ fn main() {
 "#;
 
         let content = processor.process(markdown).unwrap();
-        
+
         // 检查代码块渲染
         assert!(content.html.contains("<code") || content.html.contains("<pre>"));
         assert!(content.html.contains("fn main"));
@@ -315,12 +334,12 @@ fn main() {
     #[test]
     fn test_title_extraction() {
         let processor = MarkdownProcessor::new();
-        
+
         // Test H1 extraction
         let markdown1 = "# First Heading\n\nContent.";
         let content1 = processor.process(markdown1).unwrap();
         assert_eq!(content1.title, "First Heading");
-        
+
         // Test no heading
         let markdown2 = "Just some content without heading.";
         let content2 = processor.process(markdown2).unwrap();
@@ -331,9 +350,9 @@ fn main() {
     fn test_word_count_calculation() {
         let processor = MarkdownProcessor::new();
         let markdown = "This is a test content with exactly ten words in it.";
-        
+
         let content = processor.process(markdown).unwrap();
-        
+
         // 字数统计基于字符数，不是单词数
         assert!(content.metadata.word_count.is_some());
         assert!(content.metadata.word_count.unwrap() > 0);
@@ -344,9 +363,9 @@ fn main() {
         let processor = MarkdownProcessor::new();
         let words = vec!["word"; 300]; // 300 words
         let markdown = format!("# Title\n\n{}", words.join(" "));
-        
+
         let content = processor.process(&markdown).unwrap();
-        
+
         // 阅读时间基于字符数，300个单词约1500字符，应该大于1分钟
         assert!(content.metadata.reading_time.unwrap() >= 1);
     }
@@ -355,7 +374,7 @@ fn main() {
     fn test_empty_markdown() {
         let processor = MarkdownProcessor::new();
         let content = processor.process("").unwrap();
-        
+
         assert_eq!(content.title, "无标题");
         assert_eq!(content.markdown, "");
         assert_eq!(content.metadata.word_count, Some(0));

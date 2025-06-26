@@ -13,7 +13,7 @@ pub struct Content {
     pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ContentMetadata {
     pub author: Option<String>,
     pub tags: Vec<String>,
@@ -112,20 +112,6 @@ impl Content {
     }
 }
 
-impl Default for ContentMetadata {
-    fn default() -> Self {
-        Self {
-            author: None,
-            tags: Vec::new(),
-            description: None,
-            cover_image: None,
-            reading_time: None,
-            word_count: None,
-            custom_fields: HashMap::new(),
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -134,7 +120,7 @@ mod tests {
     #[test]
     fn test_content_creation() {
         let content = Content::new("Test Title".to_string(), "# Test Content".to_string());
-        
+
         assert_eq!(content.title, "Test Title");
         assert_eq!(content.markdown, "# Test Content");
         assert!(content.html.is_empty());
@@ -145,7 +131,7 @@ mod tests {
     #[test]
     fn test_metadata_default() {
         let metadata = ContentMetadata::default();
-        
+
         assert!(metadata.author.is_none());
         assert!(metadata.tags.is_empty());
         assert!(metadata.description.is_none());
@@ -183,12 +169,17 @@ description: "A test article"
 
 This is the main content of the article."#;
 
-        let content = Content::from_markdown_with_front_matter(content_with_front_matter.to_string()).unwrap();
-        
+        let content =
+            Content::from_markdown_with_front_matter(content_with_front_matter.to_string())
+                .unwrap();
+
         assert_eq!(content.title, "Test Article");
         assert_eq!(content.metadata.author, Some("Test Author".to_string()));
         assert_eq!(content.metadata.tags, vec!["rust", "programming"]);
-        assert_eq!(content.metadata.description, Some("A test article".to_string()));
+        assert_eq!(
+            content.metadata.description,
+            Some("A test article".to_string())
+        );
         assert!(content.markdown.contains("# Main Content"));
     }
 
@@ -196,7 +187,7 @@ This is the main content of the article."#;
     fn test_markdown_without_front_matter() {
         let markdown = "# Simple Title\n\nSimple content.";
         let content = Content::from_markdown_with_front_matter(markdown.to_string()).unwrap();
-        
+
         assert_eq!(content.title, "Simple Title");
         assert_eq!(content.markdown, markdown);
         assert!(content.metadata.author.is_none());
