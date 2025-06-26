@@ -70,10 +70,22 @@ feature-depth = 1
 # A list of advisory IDs to ignore. Note that ignored advisories will still
 # output a note when they are encountered.
 ignore = [
-    #"RUSTSEC-0000-0000",
-    #{ id = "RUSTSEC-0000-0000", reason = "you can specify a reason the advisory is ignored" },
-    #"a-crate-that-is-yanked@0.1.1", # you can also ignore yanked crate versions if you wish
-    #{ crate = "a-crate-that-is-yanked@0.1.1", reason = "you can specify why you are ignoring the yanked crate" },
+    # Ring 0.16.x security issues - these are transitive dependencies through thirtyfour
+    # Will be resolved when upstream dependencies update their ring versions
+    { id = "RUSTSEC-2025-0009", reason = "Transitive dependency through thirtyfour, not directly used" },
+    { id = "RUSTSEC-2025-0010", reason = "Unmaintained ring 0.16.x through thirtyfour, awaiting upstream update" },
+    
+    # Rustls vulnerability in 0.20.x - also through thirtyfour/fantoccini 
+    { id = "RUSTSEC-2024-0336", reason = "Transitive dependency through thirtyfour/fantoccini, not using affected features" },
+    
+    # yaml-rust unmaintained - through config crate
+    { id = "RUSTSEC-2024-0320", reason = "Used through config crate for configuration parsing, low risk" },
+    
+    # IDNA vulnerability through reqwest - low risk for CLI tool
+    { id = "RUSTSEC-2024-0421", reason = "Transitive dependency through reqwest, not processing untrusted URLs" },
+    
+    # instant unmaintained - through cached crate
+    { id = "RUSTSEC-2024-0384", reason = "Transitive dependency through cached crate, low risk" },
 ]
 # If this is true, then cargo deny will use the git executable to fetch advisory database.
 # If this is false, then it uses a built-in git library.
