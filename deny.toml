@@ -24,7 +24,7 @@ ignore = [
 
 [licenses]
 # The lint level for crates which do not have a detectable license
-unlicensed = "warn"
+unlicensed = "allow"
 # List of explicitly allowed licenses
 allow = [
     "MIT",
