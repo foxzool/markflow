@@ -8,7 +8,8 @@ cover: "https://via.placeholder.com/800x400"
 
 # MarkFlow 示例文章
 
-这是一个展示 **MarkFlow** 各种功能的示例文章。MarkFlow 是一个强大的 Rust 工具，用于将 Markdown 转换为适合不同平台的 HTML 格式。
+这是一个展示 **MarkFlow** 各种功能的示例文章。MarkFlow 是一个强大的 Rust 工具，用于将 Markdown 转换为适合不同平台的 HTML
+格式。
 
 ## 文本格式
 
@@ -21,9 +22,9 @@ cover: "https://via.placeholder.com/800x400"
 ### 引用
 
 > 这是一个引用块的示例。
-> 
+>
 > 引用可以包含多行内容，MarkFlow 会为不同平台应用合适的样式。
-> 
+>
 > — 某位智者
 
 ## 代码示例
@@ -37,15 +38,15 @@ use markflow::adapters::{WeChatStyleAdapter, ZhihuStyleAdapter};
 fn main() {
     let processor = MarkdownProcessor::new();
     let content = processor.process("# Hello MarkFlow!").unwrap();
-    
+
     // 适配微信公众号
     let wechat_adapter = WeChatStyleAdapter::new();
     let wechat_html = wechat_adapter.adapt_html(&content.html).unwrap();
-    
+
     // 适配知乎
     let zhihu_adapter = ZhihuStyleAdapter::new();
     let zhihu_html = zhihu_adapter.adapt_html(&content.html).unwrap();
-    
+
     println!("转换完成！");
 }
 ```
@@ -65,7 +66,7 @@ async function processMarkdown(input) {
                 optimizeImages: true
             }
         });
-        
+
         console.log('处理成功:', result);
         return result;
     } catch (error) {
@@ -104,12 +105,12 @@ async function processMarkdown(input) {
 
 ## 表格
 
-| 平台 | 支持状态 | 特殊功能 | 备注 |
-|------|----------|----------|------|
-| 微信公众号 | ✅ 完全支持 | 内联样式、脚注转换 | 移动端优化 |
-| 知乎 | ✅ 完全支持 | 数学公式、代码高亮 | 支持 LaTeX |
-| 掘金 | 🚧 开发中 | 代码高亮、标签 | 计划支持 |
-| CSDN | 📋 计划中 | 基础格式 | 未来版本 |
+| 平台    | 支持状态   | 特殊功能      | 备注       |
+|-------|--------|-----------|----------|
+| 微信公众号 | ✅ 完全支持 | 内联样式、脚注转换 | 移动端优化    |
+| 知乎    | ✅ 完全支持 | 数学公式、代码高亮 | 支持 LaTeX |
+| 掘金    | 🚧 开发中 | 代码高亮、标签   | 计划支持     |
+| CSDN  | 📋 计划中 | 基础格式      | 未来版本     |
 
 ## 数学公式（知乎支持）
 

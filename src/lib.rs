@@ -42,6 +42,9 @@ pub mod error {
         #[error("Template error: {0}")]
         Template(#[from] tera::Error),
         
+        #[error("Invalid platform: {0}")]
+        InvalidPlatform(String),
+        
         #[error("Other error: {0}")]
         Other(String),
     }

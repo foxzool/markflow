@@ -227,3 +227,138 @@ impl Default for MarkdownProcessor {
         Self::new()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_processor_creation() {
+        let processor = MarkdownProcessor::new();
+        assert!(processor.options.extension.table);
+        assert!(processor.options.extension.strikethrough);
+        assert!(processor.options.extension.footnotes);
+    }
+
+    #[test]
+    fn test_simple_markdown_processing() {
+        let processor = MarkdownProcessor::new();
+        let markdown = "# Test Title\n\nThis is a **bold** text.";
+        
+        let content = processor.process(markdown).unwrap();
+        
+        assert_eq!(content.title, "Test Title");
+        assert!(content.html.contains("<h1>"));
+        assert!(content.html.contains("<strong>"));
+        assert!(content.html.contains("bold"));
+    }
+
+    #[test]
+    fn test_front_matter_parsing() {
+        let processor = MarkdownProcessor::new();
+        let markdown_with_front_matter = r#"---
+title: "Custom Title"
+author: "Test Author"
+tags: "rust,markdown"
+description: "Test description"
+---
+
+# Heading
+
+Content here."#;
+
+        let content = processor.process(markdown_with_front_matter).unwrap();
+        
+        assert_eq!(content.title, "Custom Title");
+        assert_eq!(content.metadata.author, Some("Test Author".to_string()));
+        assert_eq!(content.metadata.tags, vec!["rust", "markdown"]);
+        assert_eq!(content.metadata.description, Some("Test description".to_string()));
+    }
+
+    #[test]
+    fn test_table_rendering() {
+        let processor = MarkdownProcessor::new();
+        let markdown = r#"
+| Name | Age |
+|------|-----|
+| John | 30  |
+| Jane | 25  |
+"#;
+
+        let content = processor.process(markdown).unwrap();
+        
+        assert!(content.html.contains("<table>"));
+        assert!(content.html.contains("<th>"));
+        assert!(content.html.contains("<td>"));
+        assert!(content.html.contains("John"));
+        assert!(content.html.contains("Jane"));
+    }
+
+    #[test]
+    fn test_code_block_rendering() {
+        let processor = MarkdownProcessor::new();
+        let markdown = r#"
+```rust
+fn main() {
+    println!("Hello, world!");
+}
+```
+"#;
+
+        let content = processor.process(markdown).unwrap();
+        
+        // 检查代码块渲染
+        assert!(content.html.contains("<code") || content.html.contains("<pre>"));
+        assert!(content.html.contains("fn main"));
+    }
+
+    #[test]
+    fn test_title_extraction() {
+        let processor = MarkdownProcessor::new();
+        
+        // Test H1 extraction
+        let markdown1 = "# First Heading\n\nContent.";
+        let content1 = processor.process(markdown1).unwrap();
+        assert_eq!(content1.title, "First Heading");
+        
+        // Test no heading
+        let markdown2 = "Just some content without heading.";
+        let content2 = processor.process(markdown2).unwrap();
+        assert_eq!(content2.title, "无标题");
+    }
+
+    #[test]
+    fn test_word_count_calculation() {
+        let processor = MarkdownProcessor::new();
+        let markdown = "This is a test content with exactly ten words in it.";
+        
+        let content = processor.process(markdown).unwrap();
+        
+        // 字数统计基于字符数，不是单词数
+        assert!(content.metadata.word_count.is_some());
+        assert!(content.metadata.word_count.unwrap() > 0);
+    }
+
+    #[test]
+    fn test_reading_time_calculation() {
+        let processor = MarkdownProcessor::new();
+        let words = vec!["word"; 300]; // 300 words
+        let markdown = format!("# Title\n\n{}", words.join(" "));
+        
+        let content = processor.process(&markdown).unwrap();
+        
+        // 阅读时间基于字符数，300个单词约1500字符，应该大于1分钟
+        assert!(content.metadata.reading_time.unwrap() >= 1);
+    }
+
+    #[test]
+    fn test_empty_markdown() {
+        let processor = MarkdownProcessor::new();
+        let content = processor.process("").unwrap();
+        
+        assert_eq!(content.title, "无标题");
+        assert_eq!(content.markdown, "");
+        assert_eq!(content.metadata.word_count, Some(0));
+        assert_eq!(content.metadata.reading_time, Some(1)); // 最小1分钟
+    }
+}

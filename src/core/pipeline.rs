@@ -1,5 +1,5 @@
-use crate::{Result, error::Error};
-use crate::core::content::{Content, ProcessedContent};
+use crate::Result;
+use crate::core::content::Content;
 use async_trait::async_trait;
 use std::sync::Arc;
 

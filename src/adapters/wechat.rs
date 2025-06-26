@@ -2,13 +2,14 @@ use crate::{Result, error::Error};
 use crate::core::content::{Content, Platform};
 use crate::adapters::traits::{PlatformAdapter, StyleProvider, ValidationError, ValidationSeverity};
 use async_trait::async_trait;
-use scraper::{Html, Selector, ElementRef};
+use scraper::{Html, Selector};
 use regex::Regex;
 use std::collections::HashMap;
 
 pub struct WeChatStyleAdapter {
     inline_styles: HashMap<String, String>,
     max_content_length: usize,
+    #[allow(dead_code)]
     allowed_tags: Vec<&'static str>,
 }
 
@@ -320,5 +321,97 @@ impl StyleProvider for WeChatStyleAdapter {
 
     fn apply_inline_styles(&self, html: &str) -> Result<String> {
         self.inline_all_styles(html)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_wechat_adapter_creation() {
+        let adapter = WeChatStyleAdapter::new();
+        assert_eq!(adapter.platform(), Platform::WeChat);
+        assert_eq!(adapter.max_content_length, 20000);
+        assert!(!adapter.inline_styles.is_empty());
+    }
+
+    #[test]
+    fn test_inline_styles_application() {
+        let adapter = WeChatStyleAdapter::new();
+        let html = "<h1>Test Title</h1><p>Test content</p>";
+        
+        let result = adapter.inline_all_styles(html).unwrap();
+        
+        assert!(result.contains("style="));
+        assert!(result.contains("font-size: 24px"));
+        assert!(result.contains("font-size: 16px"));
+    }
+
+    #[test]
+    fn test_external_links_conversion() {
+        let adapter = WeChatStyleAdapter::new();
+        let html = r#"<p>Visit <a href="https://example.com">Example</a> and <a href="/internal">Internal</a>.</p>"#;
+        
+        let result = adapter.convert_external_links(html).unwrap();
+        
+        assert!(result.contains("Example[1]"));
+        assert!(result.contains("参考链接"));
+        assert!(result.contains("https://example.com"));
+        assert!(result.contains("Internal")); // Internal link preserved
+    }
+
+    #[test]
+    fn test_mobile_optimization() {
+        let adapter = WeChatStyleAdapter::new();
+        let html = r#"<img src="test.jpg"><table><tr><td>data</td></tr></table>"#;
+        
+        let result = adapter.optimize_for_mobile(html).unwrap();
+        
+        assert!(result.contains("max-width: 100%"));
+        assert!(result.contains("overflow-x: auto"));
+    }
+
+    #[test]
+    fn test_html_sanitization() {
+        let adapter = WeChatStyleAdapter::new();
+        let html = r#"<script>alert('test')</script><p onclick="alert('click')">Content</p><style>body{color:red}</style>"#;
+        
+        let result = adapter.sanitize_html(html).unwrap();
+        
+        assert!(!result.contains("<script>"));
+        assert!(!result.contains("<style>"));
+        assert!(!result.contains("onclick"));
+        assert!(result.contains("Content"));
+    }
+
+    #[test]
+    fn test_content_validation() {
+        let adapter = WeChatStyleAdapter::new();
+        
+        // Valid content
+        let content = Content::new("Valid Title".to_string(), "Short content".to_string());
+        assert!(adapter.validate_content(&content).is_ok());
+        
+        // Empty title
+        let mut invalid_content = Content::new("".to_string(), "Content".to_string());
+        assert!(adapter.validate_content(&invalid_content).is_err());
+        
+        // Too long title
+        invalid_content.title = "a".repeat(100);
+        assert!(adapter.validate_content(&invalid_content).is_err());
+    }
+
+    #[test]
+    fn test_full_adaptation_flow() {
+        let adapter = WeChatStyleAdapter::new();
+        let html = r#"<h1>Test</h1><p>Content with <a href="https://example.com">link</a></p>"#;
+        
+        let result = adapter.adapt_html(html).unwrap();
+        
+        assert!(result.contains("style="));
+        assert!(result.contains("link[1]"));
+        assert!(result.contains("参考链接"));
+        assert!(!result.contains("<script>"));
     }
 }

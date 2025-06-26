@@ -1,7 +1,7 @@
 pub mod commands;
 pub mod args;
 
-use crate::{Result, core::MarkdownProcessor, adapters::{WeChatStyleAdapter, ZhihuStyleAdapter, PlatformAdapter}};
+use crate::Result;
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 use tracing::info;

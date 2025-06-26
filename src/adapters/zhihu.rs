@@ -3,7 +3,6 @@ use crate::core::content::{Content, Platform};
 use crate::adapters::traits::{PlatformAdapter, StyleProvider, ValidationError, ValidationSeverity};
 use async_trait::async_trait;
 use regex::Regex;
-use std::collections::HashMap;
 
 pub struct ZhihuStyleAdapter {
     math_enabled: bool,
@@ -194,6 +193,7 @@ impl ZhihuStyleAdapter {
         Ok(result)
     }
 
+    #[allow(dead_code)]
     fn add_zhihu_meta(&self, html: &str, content: &Content) -> Result<String> {
         // 添加知乎特定的元数据
         let meta_section = if !content.metadata.tags.is_empty() {

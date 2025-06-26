@@ -2,9 +2,28 @@
 name = "markflow"
 version = "0.1.0"
 edition = "2021"
-authors = ["Your Name <your.email@example.com>"]
-description = "Markdown to HTML processor with WeChat and Zhihu publishing support"
+authors = ["MarkFlow Contributors"]
+description = "A powerful Rust CLI tool for converting Markdown documents to WeChat and Zhihu platform-optimized HTML formats with automatic publishing support"
 license = "MIT OR Apache-2.0"
+readme = "README.md"
+homepage = "https://github.com/foxzool/markflow"
+repository = "https://github.com/foxzool/markflow"
+documentation = "https://docs.rs/markflow"
+keywords = ["markdown", "html", "wechat", "zhihu", "publishing"]
+categories = ["command-line-utilities", "text-processing", "web-programming"]
+rust-version = "1.70.0"
+exclude = [
+    "output/*",
+    "backup/*",
+    "target/*",
+    ".github/*",
+    "examples/*.html",
+    "tests/fixtures/*"
+]
+
+[[bin]]
+name = "markflow"
+path = "src/main.rs"
 
 [dependencies]
 # Markdown processing
