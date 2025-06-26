@@ -46,8 +46,8 @@ impl ZhihuStyleAdapter {
 
         // 处理行内数学公式 $...$
         static INLINE_MATH_REGEX: std::sync::OnceLock<Regex> = std::sync::OnceLock::new();
-        let inline_math_regex = INLINE_MATH_REGEX
-            .get_or_init(|| Regex::new(r"\$([^\$\n]+)\$").unwrap());
+        let inline_math_regex =
+            INLINE_MATH_REGEX.get_or_init(|| Regex::new(r"\$([^\$\n]+)\$").unwrap());
 
         let mut result = inline_math_regex
             .replace_all(html, |caps: &regex::Captures| {
@@ -58,8 +58,8 @@ impl ZhihuStyleAdapter {
 
         // 处理块级数学公式 $$...$$
         static BLOCK_MATH_REGEX: std::sync::OnceLock<Regex> = std::sync::OnceLock::new();
-        let block_math_regex = BLOCK_MATH_REGEX
-            .get_or_init(|| Regex::new(r"\$\$([\s\S]*?)\$\$").unwrap());
+        let block_math_regex =
+            BLOCK_MATH_REGEX.get_or_init(|| Regex::new(r"\$\$([\s\S]*?)\$\$").unwrap());
 
         result = block_math_regex
             .replace_all(&result, |caps: &regex::Captures| {
@@ -95,8 +95,10 @@ impl ZhihuStyleAdapter {
 
         // 为代码块添加知乎样式
         static PRE_REGEX: std::sync::OnceLock<Regex> = std::sync::OnceLock::new();
-        let pre_regex = PRE_REGEX
-            .get_or_init(|| Regex::new(r#"<pre><code(?:\s+class="language-([^"]*)")?>([^<]*?)</code></pre>"#).unwrap());
+        let pre_regex = PRE_REGEX.get_or_init(|| {
+            Regex::new(r#"<pre><code(?:\s+class="language-([^"]*)")?>([^<]*?)</code></pre>"#)
+                .unwrap()
+        });
 
         let result = pre_regex.replace_all(html, |caps: &regex::Captures| {
             let language = caps.get(1).map_or("text", |m| m.as_str());
@@ -110,9 +112,9 @@ impl ZhihuStyleAdapter {
 
         // 增强行内代码样式
         static INLINE_CODE_REGEX: std::sync::OnceLock<Regex> = std::sync::OnceLock::new();
-        let inline_code_regex = INLINE_CODE_REGEX
-            .get_or_init(|| Regex::new(r#"<code>([^<]+)</code>"#).unwrap());
-        
+        let inline_code_regex =
+            INLINE_CODE_REGEX.get_or_init(|| Regex::new(r#"<code>([^<]+)</code>"#).unwrap());
+
         let result = inline_code_regex
             .replace_all(&result, |caps: &regex::Captures| {
                 let code = &caps[1];

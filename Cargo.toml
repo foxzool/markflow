@@ -11,7 +11,7 @@ repository = "https://github.com/foxzool/markflow"
 documentation = "https://docs.rs/markflow"
 keywords = ["markdown", "html", "wechat", "zhihu", "publishing"]
 categories = ["command-line-utilities", "text-processing", "web-programming"]
-rust-version = "1.80.0"
+rust-version = "1.82.0"
 exclude = [
     "output/*",
     "backup/*",
