@@ -11,7 +11,7 @@ repository = "https://github.com/foxzool/markflow"
 documentation = "https://docs.rs/markflow"
 keywords = ["markdown", "html", "wechat", "zhihu", "publishing"]
 categories = ["command-line-utilities", "text-processing", "web-programming"]
-rust-version = "1.70.0"
+rust-version = "1.75.0"
 exclude = [
     "output/*",
     "backup/*",
@@ -19,6 +19,21 @@ exclude = [
     ".github/*",
     "examples/*.html",
     "tests/fixtures/*"
+]
+
+[package.metadata.cargo-machete]
+ignored = [
+    "anyhow",
+    "axum", 
+    "cached",
+    "config",
+    "html5ever",
+    "image",
+    "mime",
+    "thirtyfour",
+    "tower",
+    "tower-http",
+    "url"
 ]
 
 [[bin]]
