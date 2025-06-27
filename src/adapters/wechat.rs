@@ -156,15 +156,15 @@ impl WeChatStyleAdapter {
 
         // 预编译正则表达式，避免在循环中重复创建
         let style_regex = Regex::new(r#"style="([^"]*)""#)
-            .map_err(|e| Error::Html(format!("正则表达式创建失败: {}", e)))?;
+            .map_err(|e| Error::Html(format!("正则表达式创建失败: {e}")))?;
 
         for (selector_str, style) in &self.inline_styles {
             let _selector = Selector::parse(selector_str)
-                .map_err(|e| Error::Html(format!("CSS选择器解析失败: {}", e)))?;
+                .map_err(|e| Error::Html(format!("CSS选择器解析失败: {e}")))?;
 
             // 使用正则表达式来替换标签，添加内联样式
-            let tag_regex = Regex::new(&format!(r"<{}(\s[^>]*)?>", selector_str))
-                .map_err(|e| Error::Html(format!("正则表达式创建失败: {}", e)))?;
+            let tag_regex = Regex::new(&format!(r"<{selector_str}(\s[^>]*)?>"))
+                .map_err(|e| Error::Html(format!("正则表达式创建失败: {e}")))?;
 
             result = tag_regex
                 .replace_all(&result, |caps: &regex::Captures| {
@@ -175,11 +175,11 @@ impl WeChatStyleAdapter {
                         style_regex
                             .replace(existing_attrs, |style_caps: &regex::Captures| {
                                 let existing_style = style_caps.get(1).map_or("", |m| m.as_str());
-                                format!(r#"style="{}; {}""#, existing_style, style)
+                                format!(r#"style="{existing_style}; {style}""#)
                             })
                             .to_string()
                     } else {
-                        format!("<{}{} style=\"{}\">", selector_str, existing_attrs, style)
+                        format!("<{selector_str}{existing_attrs} style=\"{style}\">")
                     }
                 })
                 .to_string();
