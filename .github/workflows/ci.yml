@@ -83,11 +83,8 @@ jobs:
     - name: Rust Cache
       uses: Swatinem/rust-cache@v2
     
-    - name: Install cargo-audit
-      run: cargo install cargo-audit
-    
     - name: Run security audit
-      run: cargo audit
+      uses: EmbarkStudios/cargo-deny-action@v1
 
   docs:
     name: Documentation
